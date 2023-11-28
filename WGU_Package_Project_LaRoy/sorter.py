@@ -185,12 +185,15 @@ def truckSorter(load):
             nextStop = locationIndex.index(box.address)
             distance = float(getDistance(startLocation, nextStop))
             #if the address is the same, add it to the list and move on
+            '''
             if distance == 0:
                 sortedLoad.append(box)
+                print(box.packageID)
                 startLocation = locationIndex.index(box.address)
                 box.distanceToBox = 0
                 load.remove(box)
                 break
+            '''
             #if it is the closest one so far, set min and nextBox to this box's values
             if distance <= min:
                 min = distance
@@ -199,7 +202,7 @@ def truckSorter(load):
         totalDistance = totalDistance + min
         startLocation = locationIndex.index(nextBox.address)
         #packageReference.add(nextBox.packageID, nextBox)
-        nextBox.distanceToBox = min
+        packageReference.getItem(nextBox.packageID).distanceToBox = min
         sortedLoad.append(nextBox)
         load.remove(nextBox)
     return sortedLoad
