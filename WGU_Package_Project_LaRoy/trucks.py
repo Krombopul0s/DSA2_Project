@@ -25,7 +25,9 @@ class Truck:
             referenceBox = packageReference.getItem(box.packageID)
             referenceBox.status = 'Delivered'
             referenceBox.deliveryTime = time.time()
+            referenceBox.truckNum = self.truckNum
             self.manifest.append(referenceBox)
+
         return
     
     #gets the route data for packages on each truck

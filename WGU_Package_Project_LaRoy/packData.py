@@ -8,7 +8,7 @@ Please use the included csv files as there was no built-in cleaning features add
 
 #create data structure (hash table?) for everything in and define package and truck objects
 class Package:
-    def __init__(self, packageID, address, city, zipcode, deadline, notes, deliveryStatus, deliveryTime, distanceToBox):
+    def __init__(self, packageID, address, city, zipcode, deadline, notes, deliveryStatus, deliveryTime, distanceToBox, truckNum):
         self.packageID = packageID
         self.address = address
         self.city = city
@@ -17,7 +17,8 @@ class Package:
         self.notes = notes
         self.status = deliveryStatus
         self.deliveryTime = deliveryTime
-        self.distanceToBox = distanceToBox 
+        self.distanceToBox = distanceToBox
+        self.truckNum = truckNum
 
 #reads in data for packages 
 with open("Cleaned_Package_Data.csv", "r") as csvfile:
@@ -31,7 +32,7 @@ with open("Cleaned_Package_Data.csv", "r") as csvfile:
             count += 1
         else:
             #use data to create package object
-            newPack = Package(int(row[0]), row[1], row[2], row[3], row[5], row[6], 'awaiting sort', 'not yet delivered', 0.0)
+            newPack = Package(int(row[0]), row[1], row[2], row[3], row[5], row[6], 'awaiting sort', 'not yet delivered', 0.0, 0)
             #add object to hashtable
             packages.add(newPack.packageID, newPack)
 
@@ -60,11 +61,6 @@ with open("Cleaned_Distance_Data.csv", "r") as csvfile:
             address = row[0].split(", ")[1]
             index = locationIndex.index(address)
             distanceData.add(index, row[1:])
-
-
-
-#print(locationIndex)
-#print(distanceData.getList())
 
 ''' -----Tests loading distance data and accessing mileage associated with that location -----
 print(locationIndex)

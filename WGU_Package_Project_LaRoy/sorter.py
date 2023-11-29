@@ -26,6 +26,7 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
         #must be delivered with something else
         for i in range(1, 41):
             if packageList.getItem(i) != None:
+                #if this package has to be mated to another package
                 if 'Must be delivered with' in packageList.getItem(i).notes:
                     mate1 = ''
                     mate2 = ''
@@ -33,6 +34,7 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
                     mate1 = int(s[-1])
                     mate2 = int(s[0].split()[-1])
                     checkList = []
+                    #create a checklist of package ID's for boxes already loaded into truck 2
                     for item in load2:
                         checkList.append(item.packageID)
                     if packageList.getItem(i).packageID in checkList:
@@ -57,18 +59,23 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
             if packageList.getItem(i) != None:
                 #if package is delayed, add to load2
                 if 'Delayed' in packageList.getItem(i).notes:
-                    load2.append(packageList.getItem(i))
-                    packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
-                    packageList.delete(i)
+                    if ':' in packageList.getItem(i).deadline:
+                        load2.append(packageList.getItem(i))
+                        packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
+                        packageList.delete(i)
+                    else:
+                        load3.append(packageList.getItem(i))
+                        packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
+                        packageList.delete(i)
 
                 elif len(load1) < 9:
 	                #if package has a deadline add it to load1 since it is leaving at 0800
-                    if packageList.getItem(i).deadline != 'EOD':
+                    if ':' in packageList.getItem(i).deadline:
                         load1.append(packageList.getItem(i))
                         packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
                         packageList.delete(i)
-                    #add the rest of priority to load2 since it is leaving at 0905 when the late packages get in
-                    elif packageList.getItem(i).deadline != 'EOD':
+                #add the rest of priority to load2 since it is leaving at 0905 when the late packages get in
+                elif ':' in packageList.getItem(i).deadline:
                         load2.append(packageList.getItem(i))
                         packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
                         packageList.delete(i)
@@ -80,6 +87,7 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
         sortedLoad2 = truckSorter(load2)
         
         for i in range(1, 41):
+            #alternate searching trucks to see which one would be closer to current package
             if packageList.getItem(i) != None:
                 loc1 = locationIndex.index(packageList.getItem(i).address)
                 loc2 = locationIndex.index(sortedLoad1[-1].address)
@@ -106,6 +114,7 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
                     packageReference.add(packageList.getItem(i).packageID, packageList.getItem(i))
                     packageList.delete(i)
 
+        #once they're full, load onto truck 3
         for i in range(1, 41):
             if packageList.getItem(i) != None:
                     load3.append(packageList.getItem(i))
@@ -114,8 +123,10 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
         #sorts load 3 after everything leftover has been added to it.
         global sortedLoad3
         sortedLoad3 = truckSorter(load3)
+        sortedLoad1 = truckSorter(sortedLoad1)
+        sortedLoad2 = truckSorter(sortedLoad2)
         
-        
+        '''----- Testing for package list on each truck and mileage -----
         totalDist = 0
         for box in sortedLoad1:
             print(box.packageID, box.deadline, box.notes, box.distanceToBox)
@@ -135,20 +146,6 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
             totalDist += float(box.distanceToBox)
         print()
         print(totalDist)
-        
-
-        ''' ----- Just loads them indiscriminantly until trucks are full
-        for i in range(1, 41):
-            if packageList.getItem(i) != None:
-                if len(load1) < 17:
-                    load1.append(packageList.getItem(i))
-                    packageList.delete(i)
-                elif len(load2) < 17:
-                    load2.append(packageList.getItem(i))
-                    packageList.delete(i)
-                else:
-                    load3.append(packageList.getItem(i))
-                    packageList.delete(i)
         '''
 
         '''----- Testing for mated packages and requirements -----
@@ -171,40 +168,51 @@ def sortPackages(packageList, sorter_key=1): #1 = normal sort,  2 = resort
 def truckSorter(load):
     startLocation = 0 #index of the hubs location in the data
     sortedLoad = []
-    l = len(load)
+    priority = []
+    standard = []
     min = 1000
-    totalDistance = 0
-    #while we haven't used ever box from load
-    while len(sortedLoad) < l:
+    #split load into standard and priority delivery
+    for box in load:
+        if ':' in box.deadline:
+            priority.append(box)
+        else:
+            standard.append(box)
+    #sort priority by distance using a greedy algorithm
+    while len(priority) !=0:
         min = 1000
         nextBox = None
-        list = []
         #for each box still in load
-        for box in load:
+        for box in priority:
             #next stop is this box and call getDistance from previous box to this one
             nextStop = locationIndex.index(box.address)
             distance = float(getDistance(startLocation, nextStop))
-            #if the address is the same, add it to the list and move on
-            '''
-            if distance == 0:
-                sortedLoad.append(box)
-                print(box.packageID)
-                startLocation = locationIndex.index(box.address)
-                box.distanceToBox = 0
-                load.remove(box)
-                break
-            '''
-            #if it is the closest one so far, set min and nextBox to this box's values
             if distance <= min:
                 min = distance
                 nextBox = box
         #once all boxes have been gone through, add the next closest box, set variables for next round, and remove this one from the list
-        totalDistance = totalDistance + min
         startLocation = locationIndex.index(nextBox.address)
-        #packageReference.add(nextBox.packageID, nextBox)
         packageReference.getItem(nextBox.packageID).distanceToBox = min
         sortedLoad.append(nextBox)
-        load.remove(nextBox)
+        priority.remove(nextBox)
+    #sort the rest into the sorter
+    while len(standard) !=0:
+        min = 1000
+        nextBox = None
+        #for each box still in load
+        for box in standard:
+            if len(standard) == 1:
+                nextBox = box
+            #next stop is this box and call getDistance from previous box to this one
+            nextStop = locationIndex.index(box.address)
+            distance = float(getDistance(startLocation, nextStop))
+            if distance <= min:
+                min = distance
+                nextBox = box
+        #once all boxes have been gone through, add the next closest box, set variables for next round, and remove this one from the list
+        startLocation = locationIndex.index(nextBox.address)
+        packageReference.getItem(nextBox.packageID).distanceToBox = min
+        sortedLoad.append(nextBox)
+        standard.remove(nextBox)
     return sortedLoad
 
 
